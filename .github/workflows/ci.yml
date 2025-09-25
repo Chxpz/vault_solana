@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Solana CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=${{ env.SOLANA_VERSION:-"v2.2.21" }}
+          # Prefer Anza installer (new domain) with retries
+          for url in \
+            "https://release.anza.xyz/${VERSION}/install" \
+            "https://release.anza.xyz/stable/install" \
+            "https://release.solana.com/${VERSION}/install" \
+            "https://release.solana.com/stable/install"; do
+            if curl -sSfL --retry 5 --retry-delay 2 "$url" | sh -s; then
+              break
+            fi
+          done
+          echo "${HOME}/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+          solana --version
+
+      - name: Install Anchor
+        shell: bash
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked
+          avm install 0.31.1
+          avm use 0.31.1
+          anchor --version
+
+      - name: Install deps
+        working-directory: tokenized-vault
+        run: |
+          corepack enable
+          yarn install
+
+      - name: Build program
+        working-directory: tokenized-vault
+        run: anchor build
+
+      - name: Run tests
+        working-directory: tokenized-vault
+        env:
+          ANCHOR_PROVIDER_URL: http://127.0.0.1:8899
+        run: |
+          anchor test --skip-build
