@@ -21,12 +21,25 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install Solana CLI
+        shell: bash
         run: |
-          sh -c "$(curl -sSfL https://release.solana.com/stable/install)" -s
-          echo "${HOME}/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+          set -euo pipefail
+          VERSION=${{ env.SOLANA_VERSION:-"v2.2.21" }}
+          # Prefer Anza installer (new domain) with retries
+          for url in \
+            "https://release.anza.xyz/${VERSION}/install" \
+            "https://release.anza.xyz/stable/install" \
+            "https://release.solana.com/${VERSION}/install" \
+            "https://release.solana.com/stable/install"; do
+            if curl -sSfL --retry 5 --retry-delay 2 "$url" | sh -s; then
+              break
+            fi
+          done
+          echo "${HOME}/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
           solana --version
 
       - name: Install Anchor
+        shell: bash
         run: |
           cargo install --git https://github.com/coral-xyz/anchor avm --locked
           avm install 0.31.1
