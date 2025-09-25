@@ -1,0 +1,35 @@
+[toolchain]
+package_manager = "yarn"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+tokenized_vault = "HVbaZivsgTAgB11NMNrfEvPMmvnVfdSA2XzaHaCTjq3g"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run mocha -t 1000000 tests/"
+
+[test]
+startup_wait = 15000
+
+[test.validator]
+url = "https://api.mainnet-beta.solana.com"
+
+# Minimal clones (examples). We'll extend per strategy later.
+[[test.validator.clone]]
+address = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" # USDC mint
+
+[[test.validator.clone]]
+address = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" # SPL Token program
+
+[[test.validator.clone]]
+address = "So11111111111111111111111111111111111111112" # WSOL mint
